@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+<!--<script src="d3.v3.js"></script>-->
+<script src="d3.v4.js"></script>
+<script>
+    const defaultRadius = 30
+
+    var width = window.innerWidth   //SVG绘制区域的宽度
+    var height = window.innerHeight //SVG绘制区域的高度
+    console.log(height)
+    var svg = d3.select('body')               //选择<body>
+        .append('svg')             //在<body>中添加<svg>
+        .attr('oncontextmenu', () => 'self.event.returnValue=false')
+        .attr('width', width)      //设定<svg>的宽度属性
+        .attr('height', height)    //设定<svg>的高度属性
+        .on('click', function () {
+            removeArcMenu('arcMenu')
+        })
+    var svgContext = svg.append('g')
+
+    var nodes = [{name: '0'},
+        {name: '1'},
+        {name: '2'},
+        {name: '3'},
+        {name: '4'},
+        {name: '5'},
+        {name: '6'}]
+
+    var edges = [
+        {
+            source: 0,
+            target: 1
+        },
+        {
+            source: 0,
+            target: 2
+        },
+        {
+            source: 0,
+            target: 3
+        },
+        {
+            source: 1,
+            target: 4
+        },
+        {
+            source: 1,
+            target: 5
+        },
+        {
+            source: 1,
+            target: 6
+        }]
+    var data = [
+        {
+            group_id:1000,
+            name:"实践与应用1",
+            index:0,
+            parent:-1,
+            source: 0,
+            target: 0,
+            id:"1231532123"
+        },
+        {
+            group_id:1000,
+            name:"实践与应用2",
+            index:1,
+            parent:0,
+            source: 0,
+            target: 1,
+            id:"1231532123"
+        },
+        {
+            group_id:1000,
+            name:"D3.js 实践与应用3",
+            index:2,
+            parent:0,
+            source: 0,
+            target: 2,
+            id:"1231532123"
+        },
+        {
+            group_id:1000,
+            name:"D3.js 实践与应用4",
+            index:3,
+            parent:0,
+            source: 0,
+            target: 3,
+            id:"1231532123"
+        },
+        {
+            group_id:1000,
+            name:"D3.js 实践与应用5",
+            index:4,
+            parent:1,
+            source: 1,
+            target: 4,
+            id:"1231532123"
+        },
+        {
+            group_id:1000,
+            name:"D3.js 实践与应用6",
+            index:5,
+            parent:1,
+            source: 1,
+            target: 5,
+            id:"1231532123"
+        },
+        {
+            group_id:1000,
+            name:"D3.js 实践与应用7",
+            index:6,
+            parent:1,
+            source: 1,
+            target: 6,
+            id:"1231532123"
+        }
+    ]
+
+    var tmpNodes = JSON.parse(JSON.stringify(data))
+    var tmpEdges = JSON.parse(JSON.stringify(genEdges(data)))
+
+    // 通过布局来转换数据，然后进行绘制
+    var force = d3.forceSimulation(tmpNodes)
+        .force("link", d3.forceLink(tmpEdges).distance(140).strength(2))
+        .force("charge", d3.forceManyBody().strength(-400))
+        .force("collision", d3.forceCollide(defaultRadius+0.5))
+        .force("x",d3.forceX(width / 2))
+        .force("y",d3.forceY(height / 2))
+        // .force("center", d3.forceCenter(width / 2, height / 2));
+
+    console.log(tmpNodes)    //输出转换后的节点数组
+    console.log(tmpEdges)    //输出转换后的连线数组
+
+    svg.call(d3.zoom().scaleExtent([0.5, 2]).on('zoom', () => {
+        svgContext.attr('transform', d3.event.transform)
+    })).on('dblclick.zoom', null);
+
+    // 生成20种随机颜色
+    var color = d3.scaleOrdinal(d3.schemeCategory20);
+
+    //箭头
+    var marker = svg.append('marker')
+        .attr('id', function (d) {
+            return d
+        })
+        .attr('id', 'resolved')
+        .attr('markerUnits', 'strokeWidth')//设置为strokeWidth箭头会随着线的粗细发生变化
+        .attr('markerUnits', 'userSpaceOnUse')
+        .attr('viewBox', '0 -5 10 10')//坐标系的区域
+        .attr('refX', 33)// 箭头坐标
+        .attr('refY', 0) // 箭头偏移量
+        .attr('markerWidth', 12)//标识的大小
+        .attr('markerHeight', 12)
+        .attr('orient', 'auto')//绘制方向，可设定为：auto（自动确认方向）和 角度值
+        .attr('stroke-width', 2)//箭头宽度
+        .append('path')
+        .attr('d', 'M0,-5L10,0L0,5')//箭头的路径
+        .attr('fill', '#6c6c6c')//箭头颜色
+
+    //绘制连线
+    var lines = svgContext.append('g').selectAll('.forceLine')
+        .data(tmpEdges)
+        .enter()
+        .append('line')
+        .attr('class', 'forceLine')
+        .attr('marker-end', 'url(#resolved)')
+        .style('stroke', '#6c6c6c')
+
+
+    // 拖拽事件函数
+    var drag = d3.drag()
+        .on('start', function (d) {
+            if (!d3.event.active)
+                force.alphaTarget(0.1).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+            // 停止事件,处理缩放
+            d3.event.sourceEvent.stopPropagation()
+            //拖曳开始后设定被拖曳对象为固定
+            // d.fixed = true
+            // 清楚弧菜单
+            removeArcMenu('arcMenu')
+        })
+        .on('end', function (d, i) {
+            if (!d3.event.active)
+                force.alphaTarget(0);
+            //拖曳结束后变为原来的颜色
+            d3.select(this).style('fill', color(i))
+        })
+        .on('drag', function (d) {
+            d.fx = d3.event.x;
+            d.fy = d3.event.y;
+            //拖曳中对象变为黄色
+            d3.select(this).style('fill', 'yellow')
+        })
+
+    //绘制节点
+    var circles = svgContext.append('g').selectAll('.forceCircle')
+        .data(tmpNodes)
+        .enter()
+        .append('circle')
+        .attr('class', 'forceCircle')
+        .attr('r', defaultRadius)
+        .attr('color',function (d, i) {
+            return color(i)
+        })
+        .style('fill', function (d, i) {
+            return color(i)
+        })
+        .on('contextmenu', function (d) {
+            d.fx = d.x;
+            d.fy = d.y;
+            removeArcMenu('arcMenu')
+            addArc('open',d.index,45, 0, 0.49, d.x, d.y, defaultRadius + 2, defaultRadius * 2)
+            addArc('close',d.index,-45, 0.5, 0.99, d.x, d.y, defaultRadius + 2, defaultRadius * 2)
+            addArc('add',d.index,45, 1, 1.49, d.x, d.y, defaultRadius + 2, defaultRadius * 2)
+            addArc('edit',d.index,-45, 1.5, 1.99, d.x, d.y, defaultRadius + 2, defaultRadius * 2)
+        })
+        .on('click', function (d) {
+            console.log(d3)
+        })
+        .on('mousemove',function (d){
+            mousemoveCircles(d)
+        })
+        .on("mouseout",function (d){
+            mouseoutCircles()
+        })
+        .call(drag) //允许拖动
+
+    circles.append("svg:title")
+        .text(function (d) {
+            return d.name
+        })
+
+    //绘制文字
+    var texts = svgContext.append('g').selectAll('.forceText')
+        .data(tmpNodes)
+        .enter()
+        .append('text')
+        .attr('class', 'forceText')
+        .attr('pointer-events', 'none')
+        .attr('x', function (d) {
+            return d.x
+        })
+        .attr('y', function (d) {
+            return d.y
+        })
+        .attr('dy', '.5em')
+        .attr('font-size', '12px')
+        .style('fill', '#111111')
+        .text(function (d) {
+            return limitText(d.name)
+        })
+
+    //tick事件的监听器
+    force.on('tick', function () {
+        //更新连线的端点坐标
+        lines.attr('x1', function (d) {
+            return d.source.x
+        })
+        lines.attr('y1', function (d) {
+            return d.source.y
+        })
+        lines.attr('x2', function (d) {
+            return d.target.x
+        })
+        lines.attr('y2', function (d) {
+            return d.target.y
+        })
+
+        //更新节点坐标
+        circles.attr('cx', function (d) {
+            return d.x
+        })
+        circles.attr('cy', function (d) {
+            return d.y
+        })
+
+        //更新节点文字的坐标
+        texts.attr('x', function (d) {
+            return d.x - 25
+        })
+        texts.attr('y', function (d) {
+            return d.y
+        })
+    })
+
+    // 添加弧菜单
+    function addArc(operation,index, rotate,startA, endA, x, y, innerR = 25, outerR = 60) {
+        //创建一个弧生成器
+        var arcPath = d3.arc()
+            .innerRadius(innerR)
+            .outerRadius(outerR)
+            .startAngle(Math.PI * startA)
+            .endAngle(Math.PI * endA)
+
+        // 如果menu组没有创建则创建
+        if (svgContext.select('#arcMenu').size() === 0) {
+            menuGroups = svgContext.append('g')
+                .attr('id', 'arcMenu')
+                .attr('transform', svgContext.select('g').attr('transform'))
+        }
+
+        // 构建单个menu,将弧和文字组合
+        var menuGroup = menuGroups.append('g')
+            .attr('operation', operation)
+            .attr('index',index)
+            .on('click', function () {
+                index = d3.select(this).attr('index')
+                console.log(index)
+                menuOperation(d3.select(this).attr('operation'),index)
+            })
+        menuGroup.append('path') // 构建menu弧
+            .attr('d', arcPath)
+            .attr('transform', 'translate(' + x + ',' + y + ')')
+            // .attr("stroke","black")
+            .attr('fill', color(Math.random()));
+        menuGroup.append('text') // 构建menu弧上的文字
+            .text(operation)
+            .attr('cursor', 'pointer')
+            .attr('text-anchor', 'middle')
+            .attr('font-size', '14px')
+            .attr('fill', 'white')
+            .attr('transform', function (d) {
+                return 'translate(' + x + ',' + y + ')' + 'translate(' + arcPath.centroid(d) + ')' +'rotate('+rotate+')' //圆位置+弧的中心位置
+            })
+    }
+
+    // 清除menu
+    function removeArcMenu(id) {
+        svgContext.select('#' + id).remove()
+    }
+
+    // menu对应操作
+    function menuOperation(type,index) {
+        if (type === 'edit') {
+            console.log(type)
+            return
+        }
+
+        if (type === 'add') {
+            addNode(index)
+            return
+        }
+
+        if (type === 'open') {
+            console.log(type)
+            return
+        }
+
+        if (type === 'close') {
+            console.log(type)
+            return
+        }
+    }
+
+    // 添加节点
+    function addNode(index) {
+        var len = data.length
+        data.push({
+            group_id:1000,
+            name:"实践与应用"+len,
+            index:len,
+            parent:index,
+            source: index,
+            target: len,
+            id:"1231532123"
+        })
+
+        var tmpNodes = JSON.parse(JSON.stringify(data))
+        var tmpEdges = JSON.parse(JSON.stringify(genEdges(data)))
+
+        circles = circles
+            .data(tmpNodes)
+            .enter()
+            .append('circle')
+            .merge(circles)
+            .attr('class', 'forceCircle')
+            .attr('r', defaultRadius)
+            .attr('color',function (d, i) {
+                return color(i)
+            })
+            .style('fill', function (d, i) {
+                return color(i)
+            })
+            .on('contextmenu', function (d) {
+                d.fx = d.x;
+                d.fy = d.y;
+                removeArcMenu('arcMenu')
+                addArc('open',d.index,45, 0, 0.49, d.x, d.y, defaultRadius + 2, defaultRadius * 2)
+                addArc('close',d.index,-45, 0.5, 0.99, d.x, d.y, defaultRadius + 2, defaultRadius * 2)
+                addArc('add',d.index,45, 1, 1.49, d.x, d.y, defaultRadius + 2, defaultRadius * 2)
+                addArc('edit',d.index,-45, 1.5, 1.99, d.x, d.y, defaultRadius + 2, defaultRadius * 2)
+            })
+            .on('click', function (d) {
+                console.log(d3)
+            })
+            .on('mousemove',function (d){
+                mousemoveCircles(d)
+            })
+            .on("mouseout",function (d){
+                mouseoutCircles()
+            })
+            .call(drag) //允许拖动
+
+        lines = lines
+            .data(tmpEdges)
+            .enter()
+            .append('line')
+            .merge(lines)
+            .attr('class', 'forceLine')
+            .attr('marker-end', 'url(#resolved)')
+            .style('stroke', '#6c6c6c');
+
+
+        texts = texts
+            .data(tmpNodes)
+            .enter()
+            .append('text')
+            .merge(texts)
+            .attr('class', 'forceText')
+            .attr('pointer-events', 'none')
+            .attr('x', function (d) {
+                return d.x
+            })
+            .attr('y', function (d) {
+                return d.y
+            })
+            .attr('dy', '.5em')
+            .attr('font-size', '12px')
+            .style('fill', '#111111')
+            .text(function (d) {
+                return limitText(d.name)
+            })
+
+        force.nodes(tmpNodes)
+        force.force("link").links(tmpEdges)
+        force.alpha(1).restart()
+    }
+
+    // 过滤出线的数据
+    function genEdges(data){
+        return data.filter(item => {
+            if (item.source+item.target>0) {
+                return item
+            }
+        })
+    }
+
+    // 限制文本长度
+    function limitText(text) {
+        // 如果小于四个字符，不换行
+        if (text.length > 6){
+            return text.substring(0, 6)
+        }
+        return text
+    }
+
+    // 移动到圆上
+    function mousemoveCircles(circle){
+        // mousemove时改变圆圈背景色
+        circles.style("fill", function (node) {
+            if (circle.index == node.source ||
+                circle.index == node.target ||
+                circle.source == node.index) {
+                return d3.select(this).attr('color');
+            }
+            return '#FFFAF0';
+        });
+
+        lines.style("stroke", function (line) {
+            if (circle.index == line.target.index ||
+                circle.index == line.source.index) {
+                return '#6c6c6c';
+            }
+            return '#FFFAF0';
+        });
+        lines.attr("marker-end", function (line) {
+            if (circle.index == line.target.index ||
+                circle.index == line.source.index) {
+                return 'url(#resolved)';
+            }
+            return "";
+        });
+
+        texts.style("fill", function (node) {
+            if (circle.index == node.source ||
+                circle.index == node.target ||
+                circle.source == node.index) {
+                return '#111111';
+            }
+            return '#fff0fa';
+        });
+
+
+    }
+
+    // 移出圆
+    function mouseoutCircles(){
+        //单击时圆圈背景色
+        circles.style("fill", function () {
+            return d3.select(this).attr('color');
+        });
+
+        lines.style("stroke", function () {
+            return '#6c6c6c';
+        });
+        lines.attr("marker-end", function () {
+            return 'url(#resolved)';
+        });
+
+        texts.style("fill", function () {
+            return '#111111';
+        });
+    }
+
+</script>
+</body>
+</html>
