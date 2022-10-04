@@ -2,7 +2,30 @@
   <div class="navbar">
     <div class="w1224">
       <div class="navbarLeft">
-        <div class="logo" @click="returnTo">MianBa</div>
+        <div class="logo" @click="returnTo">
+          <svg xmlns="http://www.w3.org/2000/svg" font-size="32" style="height: 48px;">
+            <text text-anchor="middle" x="20%" y="66%" text-transform="uppercase" fill="none" stroke="#293462"
+                  text-shadow="0 0 5px #293462" stroke-width="1px" stroke-dasharray="90 150"> MainBa
+              <animate attributeName="stroke-dashoffset" begin="-1.5s" dur="6s" from="0" to="-200"
+                       repeatCount="indefinite"></animate>
+            </text>
+            <text text-anchor="middle" x="20%" y="66%" text-transform="uppercase" fill="none" stroke="#1CD6CE"
+                  text-shadow="0 0 5px #1CD6CE" stroke-width="1px" stroke-dasharray="90 150"> MainBa
+              <animate attributeName="stroke-dashoffset" begin="-3s" dur="6s" from="0" to="-200"
+                       repeatCount="indefinite"></animate>
+            </text>
+            <text text-anchor="middle" x="20%" y="66%" text-transform="uppercase" fill="none" stroke="#FEDB39"
+                  text-shadow="0 0 5px #FEDB39" stroke-width="1px" stroke-dasharray="90 150"> MainBa
+              <animate attributeName="stroke-dashoffset" begin="-4.5s" dur="6s" from="0" to="-200"
+                       repeatCount="indefinite"></animate>
+            </text>
+            <text text-anchor="middle" x="20%" y="66%" text-transform="uppercase" fill="none" stroke="#D61C4E"
+                  text-shadow="0 0 5px #D61C4E" stroke-width="1px" stroke-dasharray="90 150"> MainBa
+              <animate attributeName="stroke-dashoffset" begin="-6s" dur="6s" from="0" to="-200"
+                       repeatCount="indefinite"></animate>
+            </text>
+          </svg>
+        </div>
       </div>
       <div class="navbarRight">
         <div class="tag" v-if="isLogin == false" @click="isLogin = true">
