@@ -4,7 +4,7 @@ const routes = [
   {
     path: '/',
     redirect: '/index',
-    component: () => import('../components/common/layoutIndex.vue'),
+    component: () => import('../components/common/layout-index.vue'),
     children: [
       // 首页
       {
@@ -15,7 +15,7 @@ const routes = [
       // 账号设置
       {
         path: '/accountSet',
-        name: 'accountSet',
+        name: 'account-set',
         component: () => import('../views/User/accountSet')
       },
       // 图
@@ -29,6 +29,16 @@ const routes = [
         path: '/md',
         name: 'md-preview',
         component: () => import('../components/Graph/md-preview')
+      },
+      {
+        path: 'addBook',
+        name: "add-book",
+        component: () => import('../components/User/add-book')
+      },
+      {
+        path: 'bookList',
+        name: "book-list",
+        component: () => import('../components/User/book-list')
       }
     ]
   }

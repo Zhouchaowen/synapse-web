@@ -16,6 +16,8 @@
             <i class="iconfont iconxia"></i>
             <div class="dropList" v-if="isDropShow">
               <div class="dropItem" @click="gotoAccountSet">账号设置</div>
+              <div class="dropItem" @click="addBook">添加图书</div>
+              <div class="dropItem" @click="bookList">我的图书</div>
               <div class="dropItem logout">退出账号</div>
             </div>
           </div>
@@ -37,7 +39,7 @@ export default {
       onInput: '0',
       searchvalue: '',
       isLogin: false,
-      isDropShow: false // 是否显示下拉菜单
+      isDropShow: false, // 是否显示下拉菜单
     })
     const handleBlur = (item) => {
       data.onInput = '0'
@@ -60,6 +62,16 @@ export default {
     const gotoAccountSet = () => {
       router.push('/accountSet')
     }
+
+    // 添加图书
+    const addBook = () => {
+      router.push('/addBook')
+    }
+
+    const bookList = () =>{
+      router.push('/bookList')
+    }
+
     return {
       ...toRefs(data),
       handleBlur,
@@ -67,7 +79,9 @@ export default {
       returnTo,
       gotoMybooks,
       gotoUserIndex,
-      gotoAccountSet
+      gotoAccountSet,
+      addBook,
+      bookList
     }
   }
 }

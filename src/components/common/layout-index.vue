@@ -7,8 +7,8 @@
 </template>
 
 <script>
-import HomeHeader from './HeaderIndex'
-import HomeFooter from './footerIndex'
+import HomeHeader from './header-index'
+import HomeFooter from './footer-index'
 export default {
   name: 'layoutIndex',
   components: {

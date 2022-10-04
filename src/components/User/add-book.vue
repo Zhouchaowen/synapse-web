@@ -16,6 +16,14 @@
       </el-radio-group>
     </el-form-item>
   </el-form>
+  <div class="button">
+    <span class="dialog-footer">
+    <el-button>取消</el-button>
+    <el-button type="primary" @click="submitForm"
+    >确认</el-button
+    >
+  </span>
+  </div>
 </template>
 
 <script>
@@ -61,6 +69,7 @@ export default {
     const submitForm = () => {
       formRef.value.validate().then(res => {
         console.log(res)
+        console.log(form)
         if (res) {
           // 调用保存图书的接口
         }
@@ -85,5 +94,9 @@ export default {
     font-size: 12px;
     color: #999999;
     font-weight: 200;
+  }
+  .button{
+    justify-content: center;
+    display: flex;
   }
 </style>
