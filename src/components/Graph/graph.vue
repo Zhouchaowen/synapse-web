@@ -448,8 +448,8 @@ export default {
 
     // 添加节点
     function addCircle(index) {
-      var len = data.length
-      data.push({
+      let len = tmpNodes.length
+      let node = {
         group_id:1000,
         name:"实践与应用"+len,
         index:len,
@@ -457,17 +457,20 @@ export default {
         source: index,
         target: len,
         id:"1231532123"
-      })
+      }
 
-      tmpNodes = JSON.parse(JSON.stringify(data))
-      tmpEdges = JSON.parse(JSON.stringify(genEdges(data)))
+      tmpNodes.push(genCircles([node])[0])
+      tmpEdges.push(genEdges([node])[0])
 
-      circles = circles
+      circles = svgContext.select('.circle').selectAll(".forceCircle")
         .data(tmpNodes)
         .enter()
         .append('circle')
         .merge(circles)
         .attr('class', 'forceCircle')
+        .attr('isOpen', function (d){
+          return d.isOpen
+        })
         .attr('r', defaultRadius)
         .attr('id',function (d){
           return d.id
@@ -496,9 +499,19 @@ export default {
         .on("mouseout",function (d){
           mouseoutCircles()
         })
+        .on('dblclick', function () {
+          console.log(this)
+          let url = router.resolve({
+            path: '/md',
+            query: {
+              id: '1'
+            }
+          })
+          window.open(url.href,'_blank')
+        })
         .call(drag) //允许拖动
 
-      lines = lines
+      lines = svgContext.select('.line').selectAll(".forceLine")
         .data(tmpEdges)
         .enter()
         .append('line')
@@ -507,8 +520,7 @@ export default {
         .attr('marker-end', 'url(#resolved)')
         .style('stroke', '#6c6c6c');
 
-
-      texts = texts
+      texts = svgContext.select('.text').selectAll(".forceText")
         .data(tmpNodes)
         .enter()
         .append('text')
