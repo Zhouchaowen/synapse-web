@@ -27,15 +27,17 @@
     @close="closeMdDialog"
     @open="openMdDialog"
   >
-    <mdEditor ref="mdEditorRef"></mdEditor>
+    <mdEditor ref="editorMdRef"></mdEditor>
   </el-dialog>
 </template>
 <script>
 import * as d3 from 'd3'
 import { onMounted, reactive, ref, toRefs } from 'vue'
+import { useRouter } from 'vue-router'
 import addNodeFrom from './add-node-from'
 import mdEditor from './md-editor'
-import { useRouter } from 'vue-router'
+import api from '@/utils'
+
 export default {
   name: 'graph',
   components: {
@@ -45,86 +47,21 @@ export default {
   setup () {
     const router = useRouter()
     const state = reactive({
-      bookList: [],
       dialogVisibleAddNodeFrom: false, // 弹框是否显示
-      dialogVisibleMdEditor: false
+      dialogVisibleMdEditor: false,
+      bookId: router.currentRoute.value.query.id
     })
 
     const addNodeFromRef = ref(null)
-    const mdEditorRef = ref(null)
+    const editorMdRef = ref(null)
 
-    const data = [
-      {
-        group_id:1000,
-        name:"实践与应用1",
-        index:0,
-        parent:-1,
-        source: 0,
-        target: 0,
-        id:"1231532121"
-      },
-      {
-        group_id:1000,
-        name:"实践与应用2",
-        index:1,
-        parent:0,
-        source: 0,
-        target: 1,
-        id:"1231532122"
-      },
-      {
-        group_id:1000,
-        name:"D3.js 实践与应用3",
-        index:2,
-        parent:0,
-        source: 0,
-        target: 2,
-        id:"1231532123"
-      },
-      {
-        group_id:1000,
-        name:"D3.js 实践与应用4",
-        index:3,
-        parent:0,
-        source: 0,
-        target: 3,
-        id:"1231532124"
-      },
-      {
-        group_id:1000,
-        name:"D3.js 实践与应用5",
-        index:4,
-        parent:1,
-        source: 1,
-        target: 4,
-        id:"1231532125"
-      },
-      {
-        group_id:1000,
-        name:"D3.js 实践与应用6",
-        index:5,
-        parent:1,
-        source: 1,
-        target: 5,
-        id:"1231532126"
-      },
-      {
-        group_id:1000,
-        name:"D3.js 实践与应用7",
-        index:6,
-        parent:1,
-        source: 1,
-        target: 6,
-        id:"1231532127"
-      }
-    ]
+
     const defaultRadius = 30
     const graph = ref(null)
 
-    let tmpNodes = JSON.parse(JSON.stringify(genCircles(data)))
-    let tmpEdges = JSON.parse(JSON.stringify(genEdges(data)))
-
-    console.log(genEdges(data))
+    let data = []
+    let tmpNodes = []
+    let tmpEdges = []
 
     let svg
     let svgContext
@@ -134,180 +71,190 @@ export default {
     let circles
     let texts
     let color
-    let selectIndex
+
+    let currentSelectCircle
     onMounted(() => {
-      const width = graph.value.offsetWidth   //SVG绘制区域的宽度
-      const height = graph.value.offsetHeight //SVG绘制区域的高度
+      api.node.getNodesByBookId(state.bookId).then((ret) =>{
+        data = ret
 
-      svg = d3.selectAll('#graph')               //选择<body>
-        .append('svg')             //在<body>中添加<svg>
-        .attr('oncontextmenu', () => 'self.event.returnValue=false')
-        .attr('width', "100%")      //设定<svg>的宽度属性
-        .attr('height', "100%")    //设定<svg>的高度属性
-        .on('click', function () {
-          removeArcMenu('arcMenu')
-        })
+        console.log(data)
 
-      svgContext = svg.append('g')
+        tmpNodes = JSON.parse(JSON.stringify(genCircles(data)))
+        tmpEdges = JSON.parse(JSON.stringify(genEdges(data)))
 
-      svg.call(d3.zoom().scaleExtent([0.5, 1.5]).on('zoom', () => {
-        svgContext.attr('transform', d3.event.transform)
-      })).on('dblclick.zoom', function (){
-        circles.each(d =>{ // 取消节点固定
-          d.fx = null;
-          d.fy = null;
-        })
-      });
+        console.log(genCircles(data))
+        console.log(genEdges(data))
 
-      // 通过布局来转换数据，然后进行绘制
-      force = d3.forceSimulation(tmpNodes)
-        .force("link", d3.forceLink(tmpEdges).distance(140).strength(2))
-        .force("charge", d3.forceManyBody().strength(-800))
-        .force("collision", d3.forceCollide(defaultRadius+0.5))
-        .force("x",d3.forceX(width / 2))
-        .force("y",d3.forceY(height / 2))
+        const width = graph.value.offsetWidth   //SVG绘制区域的宽度
+        const height = graph.value.offsetHeight //SVG绘制区域的高度
 
-      console.log(tmpNodes)
-      console.log(tmpEdges)
-
-      // 生成20种随机颜色
-      color = d3.scaleOrdinal(d3.schemeCategory20);
-
-      //箭头
-      marker = svg.append('marker')
-        .attr('id', function (d) {
-          return d
-        })
-        .attr('id', 'resolved')
-        .attr('markerUnits', 'strokeWidth')//设置为strokeWidth箭头会随着线的粗细发生变化
-        .attr('markerUnits', 'userSpaceOnUse')
-        .attr('viewBox', '0 -5 10 10')//坐标系的区域
-        .attr('refX', 33)// 箭头坐标
-        .attr('refY', 0) // 箭头偏移量
-        .attr('markerWidth', 12)//标识的大小
-        .attr('markerHeight', 12)
-        .attr('orient', 'auto')//绘制方向，可设定为：auto（自动确认方向）和 角度值
-        .attr('stroke-width', 2)//箭头宽度
-        .append('path')
-        .attr('d', 'M0,-5L10,0L0,5')//箭头的路径
-        .attr('fill', '#6c6c6c')//箭头颜色
-
-      //绘制连线
-      lines = svgContext.append('g')
-        .attr('class', 'line')
-        .selectAll('.forceLine')
-        .data(tmpEdges)
-        .enter()
-        .append('line')
-        .attr('class', 'forceLine')
-        .attr('marker-end', 'url(#resolved)')
-        .style('stroke', '#6c6c6c')
-
-      //绘制节点
-      circles = svgContext.append('g')
-        .attr('class', 'circle')
-        .selectAll('.forceCircle')
-        .data(tmpNodes)
-        .enter()
-        .append('circle')
-        .attr('class', 'forceCircle')
-        .attr('isOpen', function (d){
-          return d.isOpen
-        })
-        .attr('r', defaultRadius)
-        .attr('id',function (d){
-          return d.id
-        })
-        .attr('color',function (d, i) {
-          return color(i)
-        })
-        .style('fill', function (d, i) {
-          return color(i)
-        })
-        .on('contextmenu', function (d) {
-          d.fx = d.x;
-          d.fy = d.y;
-          removeArcMenu('arcMenu')
-          addArc('open',d.index,45, 0, 0.49, d.x, d.y, defaultRadius + 2, defaultRadius * 2)
-          addArc('close',d.index,-45, 0.5, 0.99, d.x, d.y, defaultRadius + 2, defaultRadius * 2)
-          addArc('add',d.index,45, 1, 1.49, d.x, d.y, defaultRadius + 2, defaultRadius * 2)
-          addArc('edit',d.index,-45, 1.5, 1.99, d.x, d.y, defaultRadius + 2, defaultRadius * 2)
-        })
-        .on('mousemove',function (d){
-          mousemoveCircles(d)
-        })
-        .on("mouseout",function (d){
-          mouseoutCircles()
-        })
-        .on('dblclick', function () {
-          console.log(this)
-          let url = router.resolve({
-            path: '/md',
-            query: {
-              id: '1'
-            }
+        svg = d3.selectAll('#graph')               //选择<body>
+          .append('svg')             //在<body>中添加<svg>
+          .attr('oncontextmenu', () => 'self.event.returnValue=false')
+          .attr('width', "100%")      //设定<svg>的宽度属性
+          .attr('height', "100%")    //设定<svg>的高度属性
+          .on('click', function () {
+            removeArcMenu('arcMenu')
           })
-          window.open(url.href,'_blank')
-        })
-        .call(drag) //允许拖动
 
-      circles.append("svg:title")
-        .text(function (d) {
-          return d.name
-        })
+        svgContext = svg.append('g')
 
-      //绘制文字
-      texts = svgContext.append('g')
-        .attr('class', 'text')
-        .selectAll('.forceText')
-        .data(tmpNodes)
-        .enter()
-        .append('text')
-        .attr('class', 'forceText')
-        .attr('pointer-events', 'none')
-        .attr('x', function (d) {
-          return d.x
-        })
-        .attr('y', function (d) {
-          return d.y
-        })
-        .attr('dy', '.5em')
-        .attr('font-size', '12px')
-        .style('fill', '#111111')
-        .text(function (d) {
-          return limitText(d.name)
-        })
+        svg.call(d3.zoom().scaleExtent([0.5, 1.5]).on('zoom', () => {
+          svgContext.attr('transform', d3.event.transform)
+        })).on('dblclick.zoom', function (){
+          circles.each(d =>{ // 取消节点固定
+            d.fx = null;
+            d.fy = null;
+          })
+        });
 
-      //tick事件的监听器
-      force.on('tick', function () {
-        //更新连线的端点坐标
-        lines.attr('x1', function (d) {
-          return d.source.x
-        })
-        lines.attr('y1', function (d) {
-          return d.source.y
-        })
-        lines.attr('x2', function (d) {
-          return d.target.x
-        })
-        lines.attr('y2', function (d) {
-          return d.target.y
-        })
+        // 通过布局来转换数据，然后进行绘制
+        force = d3.forceSimulation(tmpNodes)
+          .force("link", d3.forceLink(tmpEdges).distance(140).strength(2))
+          .force("charge", d3.forceManyBody().strength(-1000))
+          .force("collision", d3.forceCollide(defaultRadius+0.5))
+          .force("x",d3.forceX(width / 2))
+          .force("y",d3.forceY(height / 2))
 
-        //更新节点坐标
-        circles.attr('cx', function (d) {
-          return d.x
-        })
-        circles.attr('cy', function (d) {
-          return d.y
-        })
+        console.log(tmpNodes)
+        console.log(tmpEdges)
 
-        //更新节点文字的坐标
-        texts.attr('x', function (d) {
-          return d.x - 25
-        })
-        texts.attr('y', function (d) {
-          return d.y
+        // 生成20种随机颜色
+        color = d3.scaleOrdinal(d3.schemeCategory20);
+
+        //箭头
+        marker = svg.append('marker')
+          .attr('id', function (d) {
+            return d
+          })
+          .attr('id', 'resolved')
+          .attr('markerUnits', 'strokeWidth')//设置为strokeWidth箭头会随着线的粗细发生变化
+          .attr('markerUnits', 'userSpaceOnUse')
+          .attr('viewBox', '0 -5 10 10')//坐标系的区域
+          .attr('refX', 33)// 箭头坐标
+          .attr('refY', 0) // 箭头偏移量
+          .attr('markerWidth', 12)//标识的大小
+          .attr('markerHeight', 12)
+          .attr('orient', 'auto')//绘制方向，可设定为：auto（自动确认方向）和 角度值
+          .attr('stroke-width', 2)//箭头宽度
+          .append('path')
+          .attr('d', 'M0,-5L10,0L0,5')//箭头的路径
+          .attr('fill', '#6c6c6c')//箭头颜色
+
+        //绘制连线
+        lines = svgContext.append('g')
+          .attr('class', 'line')
+          .selectAll('.forceLine')
+          .data(tmpEdges)
+          .enter()
+          .append('line')
+          .attr('class', 'forceLine')
+          .attr('marker-end', 'url(#resolved)')
+          .style('stroke', '#6c6c6c')
+
+        //绘制节点
+        circles = svgContext.append('g')
+          .attr('class', 'circle')
+          .selectAll('.forceCircle')
+          .data(tmpNodes)
+          .enter()
+          .append('circle')
+          .attr('class', 'forceCircle')
+          .attr('isOpen', function (d){
+            return d.isOpen
+          })
+          .attr('r', defaultRadius)
+          .attr('color',function (d, i) {
+            return color(i)
+          })
+          .style('fill', function (d, i) {
+            return color(i)
+          })
+          .on('contextmenu', function (d) {
+            d.fx = d.x;
+            d.fy = d.y;
+            currentSelectCircle = d
+            removeArcMenu('arcMenu')
+            addArc('open',d.index,45, 0, 0.49, d.x, d.y, defaultRadius + 2, defaultRadius * 2)
+            addArc('close',d.index,-45, 0.5, 0.99, d.x, d.y, defaultRadius + 2, defaultRadius * 2)
+            addArc('add',d.index,45, 1, 1.49, d.x, d.y, defaultRadius + 2, defaultRadius * 2)
+            addArc('edit',d.index,-45, 1.5, 1.99, d.x, d.y, defaultRadius + 2, defaultRadius * 2)
+          })
+          .on('mousemove',function (d){
+            mousemoveCircles(d)
+          })
+          .on("mouseout",function (d){
+            mouseoutCircles()
+          })
+          .on('dblclick', function () {
+            let url = router.resolve({
+              path: '/md',
+              query: {
+                id: '1'
+              }
+            })
+            window.open(url.href,'_blank')
+          })
+          .call(drag) //允许拖动
+
+        circles.append("svg:title")
+          .text(function (d) {
+            return d.name
+          })
+
+        //绘制文字
+        texts = svgContext.append('g')
+          .attr('class', 'text')
+          .selectAll('.forceText')
+          .data(tmpNodes)
+          .enter()
+          .append('text')
+          .attr('class', 'forceText')
+          .attr('pointer-events', 'none')
+          .attr('x', function (d) {
+            return d.x
+          })
+          .attr('y', function (d) {
+            return d.y
+          })
+          .attr('dy', '.5em')
+          .attr('font-size', '12px')
+          .style('fill', '#111111')
+          .text(function (d) {
+            return limitText(d.name)
+          })
+
+        //tick事件的监听器
+        force.on('tick', function () {
+          //更新连线的端点坐标
+          lines.attr('x1', function (d) {
+            return d.source.x
+          })
+          lines.attr('y1', function (d) {
+            return d.source.y
+          })
+          lines.attr('x2', function (d) {
+            return d.target.x
+          })
+          lines.attr('y2', function (d) {
+            return d.target.y
+          })
+
+          //更新节点坐标
+          circles.attr('cx', function (d) {
+            return d.x
+          })
+          circles.attr('cy', function (d) {
+            return d.y
+          })
+
+          //更新节点文字的坐标
+          texts.attr('x', function (d) {
+            return d.x - 25
+          })
+          texts.attr('y', function (d) {
+            return d.y
+          })
         })
       })
     })
@@ -342,6 +289,7 @@ export default {
       data.forEach(item => {
         if (item.source+item.target>0) {
           edges.push({
+            index:item.target-1,
             source: item.source,
             target: item.target,
           })
@@ -396,8 +344,8 @@ export default {
         .attr('index',index)
         .on('click', function () {
           let operationType = d3.select(this).attr('operation')
-          selectIndex = d3.select(this).attr('index')
-          menuOperation(operationType,selectIndex)
+          console.log("currentSelectCircle:",currentSelectCircle)
+          menuOperation(operationType,currentSelectCircle.index)
         })
       menuGroup.append('path') // 构建menu弧
         .attr('d', arcPath)
@@ -447,24 +395,14 @@ export default {
     }
 
     // 添加节点
-    function addCircle(index) {
-      let len = tmpNodes.length
-      let node = {
-        group_id:1000,
-        name:"实践与应用"+len,
-        index:len,
-        parent:index,
-        source: index,
-        target: len,
-        id:"1231532123"
-      }
-
+    function addCircle(node) {
+      data.push(node)
       tmpNodes.push(genCircles([node])[0])
       tmpEdges.push(genEdges([node])[0])
 
       circles = svgContext.select('.circle').selectAll(".forceCircle")
         .data(tmpNodes)
-        .enter()
+      circles = circles.enter()
         .append('circle')
         .merge(circles)
         .attr('class', 'forceCircle')
@@ -472,9 +410,6 @@ export default {
           return d.isOpen
         })
         .attr('r', defaultRadius)
-        .attr('id',function (d){
-          return d.id
-        })
         .attr('color',function (d, i) {
           return color(i)
         })
@@ -484,6 +419,7 @@ export default {
         .on('contextmenu', function (d) {
           d.fx = d.x;
           d.fy = d.y;
+          currentSelectCircle = d
           removeArcMenu('arcMenu')
           addArc('open',d.index,45, 0, 0.49, d.x, d.y, defaultRadius + 2, defaultRadius * 2)
           addArc('close',d.index,-45, 0.5, 0.99, d.x, d.y, defaultRadius + 2, defaultRadius * 2)
@@ -513,7 +449,7 @@ export default {
 
       lines = svgContext.select('.line').selectAll(".forceLine")
         .data(tmpEdges)
-        .enter()
+      lines = lines.enter()
         .append('line')
         .merge(lines)
         .attr('class', 'forceLine')
@@ -522,7 +458,7 @@ export default {
 
       texts = svgContext.select('.text').selectAll(".forceText")
         .data(tmpNodes)
-        .enter()
+      texts = texts.enter()
         .append('text')
         .merge(texts)
         .attr('class', 'forceText')
@@ -545,36 +481,76 @@ export default {
       force.alpha(1).restart()
     }
 
+    // 收起节点
     function closeCircle(index){
       tmpNodes = closeAssociatedCircle(tmpNodes,[index])
       tmpEdges = closeAssociatedEdge(tmpEdges,[index])
 
-      console.log(tmpEdges)
 
-      d3.selectAll('.forceCircle')
-        .data(tmpNodes)
-        .exit()
-        .remove();
-      d3.selectAll('.forceText')
-        .data(tmpNodes)
-        .exit()
-        .remove();
+      d3.selectAll('.forceCircle').filter(function (d,i){
+        let ok = false
+        for (i = 0;i<tmpNodes.length;i++){
+          if (tmpNodes[i].id == d.id){
+            ok = true
+            break;
+          }
+        }
+        if (!ok) {
+          return d
+        }
+      }).remove()
 
-      d3.selectAll('.forceLine')
-        .data(tmpEdges)
-        .exit()
-        .remove();
+      d3.selectAll('.forceText').filter(function (d,i){
+        let ok = false
+        for (i = 0;i<tmpNodes.length;i++){
+          if (tmpNodes[i].id == d.id){
+            ok = true
+            break;
+          }
+        }
+        if (!ok) {
+          return d
+        }
+      }).remove()
+
+      d3.selectAll('.forceLine').filter(function (d,i){
+        let ok = false
+        for (i = 0;i<tmpEdges.length;i++){
+          if (tmpEdges[i].index == d.index){
+            ok = true
+            break;
+          }
+        }
+        if (!ok) {
+          return d
+        }
+      }).remove()
+
+
+      // d3.selectAll('.forceCircle')
+      //   .data(tmpNodes)
+      //   .exit()
+      //   .remove();
+      // d3.selectAll('.forceText')
+      //   .data(tmpNodes)
+      //   .exit()
+      //   .remove();
+      //
+      // d3.selectAll('.forceLine')
+      //   .data(tmpEdges)
+      //   .exit()
+      //   .remove();
     }
 
     // 不能有环
     function closeAssociatedCircle(tmpNodes,closeIndex){
-      let tmp = []
       closeIndex.forEach(i => {
+        let tmp = []
         tmpNodes = tmpNodes.filter(item => {
-           if (item.parent != i) {
-              return item
-           }
-           tmp.push(item.index)
+          if (item.parent != i) {
+            return item
+          }
+          tmp.push(item.index)
         })
         if (tmp.length > 0)
           tmpNodes = closeAssociatedCircle(tmpNodes,tmp);
@@ -583,13 +559,13 @@ export default {
     }
 
     function closeAssociatedEdge(tmpEdges,closeIndex){
-      let tmp = []
       closeIndex.forEach(i => {
+        let tmp = []
         tmpEdges = tmpEdges.filter(item => {
           if (item.source.index != i) {
             return item
           }
-          tmp.push(item.index)
+          tmp.push(item.target.index)
         })
         if (tmp.length > 0)
           tmpEdges = closeAssociatedEdge(tmpEdges,tmp);
@@ -597,16 +573,23 @@ export default {
       return tmpEdges
     }
 
+    // 展开节点
     function openCircle(index){
       tmpNodes = openAssociatedCircle(tmpNodes,[index])
       tmpEdges = openAssociatedEdge(tmpEdges,[index])
 
-      console.log(tmpNodes)
-      console.log(tmpEdges)
-      console.log(svgContext.select('.circle').selectAll(".forceCircle"))
+      tmpNodes.sort(function (a,b){
+        return a.index - b.index
+      })
+      tmpEdges.sort(function (a,b){
+        return a.index - b.index
+      })
 
       circles = svgContext.select('.circle').selectAll(".forceCircle")
         .data(tmpNodes)
+
+
+      circles = circles
         .enter()
         .append('circle')
         .merge(circles)
@@ -615,9 +598,6 @@ export default {
           return d.isOpen
         })
         .attr('r', defaultRadius)
-        .attr('id',function (d){
-          return d.id
-        })
         .attr('color',function (d, i) {
           return color(i)
         })
@@ -627,6 +607,7 @@ export default {
         .on('contextmenu', function (d) {
           d.fx = d.x;
           d.fy = d.y;
+          currentSelectCircle = d
           removeArcMenu('arcMenu')
           addArc('open',d.index,45, 0, 0.49, d.x, d.y, defaultRadius + 2, defaultRadius * 2)
           addArc('close',d.index,-45, 0.5, 0.99, d.x, d.y, defaultRadius + 2, defaultRadius * 2)
@@ -652,10 +633,12 @@ export default {
           })
           window.open(url.href,'_blank')
         })
-       .call(drag) //允许拖动
+        .call(drag) //允许拖动
 
       lines = svgContext.select('.line').selectAll(".forceLine")
         .data(tmpEdges)
+
+      lines = lines
         .enter()
         .append('line')
         .merge(lines)
@@ -665,6 +648,8 @@ export default {
 
       texts = svgContext.select('.text').selectAll(".forceText")
         .data(tmpNodes)
+
+      texts = texts
         .enter()
         .append('text')
         .merge(texts)
@@ -689,8 +674,8 @@ export default {
     }
 
     function openAssociatedCircle(tmpNodes,addIndex){
-      let tmp = []
       addIndex.forEach(i => {
+        let tmp = []
         data.forEach(item => {
           if (item.parent == i) {
             tmp.push(item.index)
@@ -700,12 +685,13 @@ export default {
         if (tmp.length > 0)
           tmpNodes = openAssociatedCircle(tmpNodes,tmp);
       })
+
       return tmpNodes
     }
 
     function openAssociatedEdge(tmpEdges,addIndex){
-      let tmp = []
       addIndex.forEach(i => {
+        let tmp = []
         data.forEach(item => {
           if (item.parent == i) {
             tmp.push(item.index)
@@ -717,7 +703,6 @@ export default {
       })
       return tmpEdges
     }
-
 
     // 移动到圆上
     function mousemoveCircles(circle){
@@ -779,7 +764,17 @@ export default {
     }
 
     function addNode(){
-      addCircle(selectIndex)
+      let node = {
+        group_id:currentSelectCircle.group_id,
+        name:addNodeFromRef.value.nodeFrom.name,
+        parent:currentSelectCircle.index,
+        source:currentSelectCircle.index,
+      }
+      api.node.addNode(JSON.stringify(node)).then((ret) =>{
+        addCircle(ret)
+      })
+
+
       state.dialogVisibleAddNodeFrom = false
     }
 
@@ -798,12 +793,10 @@ export default {
     return {
       ...toRefs(state),
       addNodeFromRef,
-      mdEditorRef,
+      editorMdRef,
       addNode,
       closeMdDialog,
       openMdDialog,
-      selectIndex,
-      genEdges,
       graph
     }
   }

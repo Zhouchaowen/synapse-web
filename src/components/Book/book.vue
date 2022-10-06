@@ -1,6 +1,6 @@
 <template>
   <div class="card" @click="gotoDetail(item.id)" v-for="(item , index) in bookList" :key="index">
-    <img :src="(item.bgsrc == null || item.bgsrc == undefined || item.bgsrc == '')?'https://cover.kancloud.cn/thinkphp/thinkphp-the-hard-way!middle' : item.bgsrc" alt="" class="cardBg">
+    <img :src="(item.cover == null || item.cover == undefined || item.cover == '')?'https://cover.kancloud.cn/thinkphp/thinkphp-the-hard-way!middle' : item.cover" alt="" class="cardBg">
     <div class="content">
       <span class="cc">{{item.name}}</span>
     </div>
@@ -20,7 +20,14 @@ export default {
     const router = useRouter()
     console.log(props.bookList)
     const gotoDetail = (id) => {
-      router.push('/graph')
+      console.log(this)
+      let url = router.resolve({
+        path: '/graph',
+        query: {
+          id: id
+        }
+      })
+      window.open(url.href,'_blank')
     }
     return {
       gotoDetail

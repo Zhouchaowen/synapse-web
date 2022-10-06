@@ -8,7 +8,9 @@
 
 <script>
 import book from '@/components/Book/book'
-import { reactive, toRefs } from 'vue'
+import {onMounted, reactive, toRefs} from 'vue'
+import api from '@/utils'
+
 export default {
   name: 'recommend',
   components: {
@@ -16,38 +18,16 @@ export default {
   },
   setup () {
     const state = reactive({
-      bookList: [
-        {
-          id: '1',
-          name: '零基础学Docker',
-          bgsrc: 'https://box.kancloud.cn/cover_thinkphp_route-master.jpg-bookmiddle'
-        }, {
-          id: '2',
-          name: '零基础学Docker',
-          bgsrc: ''
-        }, {
-          id: '3',
-          name: '零基础学Docker',
-          bgsrc: 'https://box.kancloud.cn/cover_thinkphp_route-master.jpg-bookmiddle'
-        }, {
-          id: '4',
-          name: '零基础学Docker',
-          bgsrc: 'https://box.kancloud.cn/cover_thinkphp_route-master.jpg-bookmiddle'
-        }, {
-          id: '5',
-          name: '零基础学Docker',
-          bgsrc: 'https://box.kancloud.cn/cover_thinkphp_route-master.jpg-bookmiddle'
-        }, {
-          id: '6',
-          name: '零基础学Docker',
-          bgsrc: 'https://box.kancloud.cn/cover_thinkphp_route-master.jpg-bookmiddle'
-        }, {
-          id: '7',
-          name: '零基础学Docker',
-          bgsrc: 'https://box.kancloud.cn/cover_thinkphp_route-master.jpg-bookmiddle'
-        }
-      ]
+      bookList: []
     })
+
+    console.log(api)
+    onMounted(() => {
+      api.book.getBookList("5cf37266-3473-4006-984f-9325122678b7").then((ret) =>{
+        state.bookList = ret
+      })
+    })
+
     return {
       ...toRefs(state)
     }
