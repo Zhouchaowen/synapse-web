@@ -2,7 +2,7 @@
   <el-form
     ref="ruleFormRef"
     :model="nodeFrom"
-    label-width="120px"
+    label-width="60px"
     class="demo-ruleForm"
     status-icon
   >

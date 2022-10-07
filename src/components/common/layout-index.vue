@@ -21,7 +21,7 @@ export default {
 <style scoped>
   .mainbody {
     margin-top: 50px;
-    height: calc(100vh - 151px);
+    height: calc(100vh - 101px);
     background-color: #f5f4f4;
   }
 </style>

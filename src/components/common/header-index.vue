@@ -28,7 +28,7 @@
         </div>
       </div>
       <div class="navbarRight">
-        <div class="tag" v-if="isLogin == false" @click="isLogin = true">
+        <div class="tag" v-if="isLogin == false" @click="login">
           <i class="iconfont icondenglu"></i>
           登录
         </div>
@@ -41,38 +41,68 @@
               <div class="dropItem" @click="gotoAccountSet">账号设置</div>
               <div class="dropItem" @click="addBook">添加图书</div>
               <div class="dropItem" @click="bookList">我的图书</div>
-              <div class="dropItem logout">退出账号</div>
+              <div class="dropItem logout" @click="logout">退出账号</div>
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
+
+  <el-dialog
+    v-model="dialogVisibleLoginFrom"
+    title="登录"
+    width="30%"
+  >
+    <loginFrom ref="loginFromRef"></loginFrom>
+    <template #footer>
+      <span class="dialog-footer">
+        <el-button @click="dialogVisibleLoginFrom = false">取消</el-button>
+        <el-button type="primary" @click="loginSubmit"
+        >确认</el-button
+        >
+      </span>
+    </template>
+  </el-dialog>
 </template>
 
 <script>
-import { reactive, toRefs } from 'vue'
+import {reactive, ref, toRefs} from 'vue'
 import { useRouter } from 'vue-router'
+import loginFrom from '../User/login'
+import api from '@/utils'
+import Cookies from 'js-cookie'
 
 export default {
   name: 'HeaderIndex',
+  components: {
+    loginFrom,
+  },
   setup () {
     const router = useRouter()
     const data = reactive({
       onInput: '0',
-      searchvalue: '',
       isLogin: false,
       isDropShow: false, // 是否显示下拉菜单
+      username:'',
+      password:'',
+      dialogVisibleLoginFrom:false,
     })
+
+    const loginFromRef = ref(null)
+    let loginToken = Cookies.get('token')
+    console.log("login",loginToken)
+    if (loginToken){
+      data.isLogin = true
+    }
+
     const handleBlur = (item) => {
       data.onInput = '0'
     }
     const handleFocus = (item) => {
       data.onInput = '1'
     }
-    const gotoMybooks = () => {
-      router.push('/mybooks')
-    }
+
     // 个人中心
     const gotoUserIndex = () => {
       router.push('/user')
@@ -85,7 +115,6 @@ export default {
     const gotoAccountSet = () => {
       router.push('/accountSet')
     }
-
     // 添加图书
     const addBook = () => {
       router.push('/addBook')
@@ -95,16 +124,45 @@ export default {
       router.push('/bookList')
     }
 
+    function login(){
+      data.dialogVisibleLoginFrom = true
+    }
+
+    function loginSubmit(){
+      const Base64 = require('js-base64').Base64
+      let loginAuth = Base64.encode(loginFromRef.value.loginFrom.username+':'+loginFromRef.value.loginFrom.password)
+      console.log(loginAuth)
+      // 创建一个名称为name，对应值为value的cookie，由于没有设置失效时间，默认失效时间为该网站关闭时
+      Cookies.set('token', 'Basic '+loginAuth)
+
+      api.user.login().then((ret) =>{
+        console.log(ret)
+        Cookies.set('token', 'bearer '+ret.token)
+        data.isLogin = true
+        data.dialogVisibleLoginFrom = false
+      }).catch(err => {
+        Cookies.remove('token')
+      })
+    }
+
+    function logout(){
+      Cookies.remove('token')
+      data.isLogin = false
+    }
+
     return {
       ...toRefs(data),
       handleBlur,
       handleFocus,
       returnTo,
-      gotoMybooks,
       gotoUserIndex,
       gotoAccountSet,
       addBook,
-      bookList
+      bookList,
+      loginFromRef,
+      login,
+      loginSubmit,
+      logout,
     }
   }
 }

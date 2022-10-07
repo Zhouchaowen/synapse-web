@@ -23,7 +23,7 @@ export default {
 
     console.log(api)
     onMounted(() => {
-      api.book.getBookList("5cf37266-3473-4006-984f-9325122678b7").then((ret) =>{
+      api.book.getBookList().then((ret) =>{
         state.bookList = ret
       })
     })

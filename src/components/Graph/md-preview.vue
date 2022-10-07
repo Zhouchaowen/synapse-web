@@ -28,13 +28,16 @@
     </div>
   </div>
   <div id="md" class="md" ref="previewRef">
-    <v-md-editor :model-value="markdown" mode="preview"  height="100%"></v-md-editor>
+    <v-md-editor v-model="markdown" mode="preview"  height="100%"></v-md-editor>
   </div>
 </template>
 
 <script>
 import { onMounted, reactive, ref, toRefs } from 'vue'
 import { useRouter } from 'vue-router';
+import api from '@/utils'
+import {ElMessage} from "element-plus";
+
 export default {
   name: 'md',
   setup(props){
@@ -43,57 +46,13 @@ export default {
       titles: [],
       currentTitle:{},
       progress:0,
-      markdown: "## test",
-      id: router.currentRoute.value.query.id
+      markdown: "",
+      nodeId: router.currentRoute.value.query.nodeId
     })
 
+
     onMounted(() => {
-      state.titles = getTitles()
-      console.log(state.titles)
-      // 监听滚动事件并更新样式
-      document.getElementsByClassName('scrollbar__wrap')[2].addEventListener("scroll", function () {
-        state.progress =
-          parseInt(
-            (document.getElementsByClassName('scrollbar__wrap')[2].scrollTop / (document.getElementsByClassName('scrollbar__wrap')[2].scrollHeight - document.getElementsByClassName('scrollbar__wrap')[2].clientHeight)) *
-            100
-          ) + "%";
-
-        // let visibleTitles = [];
-        //
-        // for (let i = state.titles.length - 1; i >= 0; i--) {
-        //   const title = state.titles[i];
-        //   let scrollTop = document.getElementsByClassName('scrollbar__wrap')[2].scrollTop
-        //   let clientHeight = document.getElementsByClassName('scrollbar__wrap')[2].clientHeight
-        //   console.log(title.scrollTop,scrollTop,clientHeight)
-        //   if (title.scrollTop <= (scrollTop+clientHeight)) {
-        //     if (state.currentTitle.id === title.id) return;
-        //
-        //     Object.assign(state.currentTitle, title);
-        //
-        //     console.log()
-        //
-        //     // 展开节点
-        //     setChildrenVisible(title, true);
-        //     visibleTitles.push(title);
-        //
-        //     // 展开父节点
-        //     let parent = title.parent;
-        //     while (parent) {
-        //       setChildrenVisible(parent, true);
-        //       visibleTitles.push(parent);
-        //       parent = parent.parent;
-        //     }
-        //
-        //     // 折叠其余节点
-        //     for (const t of state.titles) {
-        //       if (!visibleTitles.includes(t)) {
-        //         setChildrenVisible(t, false);
-        //       }
-        //     }
-        //   }
-        // }
-      });
-
+      getMarkDown(state.nodeId)
       // 设置子节点的可见性
       function setChildrenVisible(title, isVisible) {
         for (const child of title.children) {
@@ -118,6 +77,7 @@ export default {
 
       let elements = Array.from(articleElement.querySelectorAll("*"));
 
+      console.log(elements)
       // 调整标签等级
       let tagNames = new Set(
         elements.map((el) => el.tagName.toLowerCase())
@@ -182,6 +142,65 @@ export default {
       }
 
       return titles;
+    }
+
+    function getMarkDown(nodeId){
+      // state.markdown = ""
+      api.md.getMdById(nodeId).then((ret) =>{
+        state.markdown = ret.content
+        state.titles = getTitles()
+        console.log(state.titles)
+        // 监听滚动事件并更新样式
+        document.getElementsByClassName('scrollbar__wrap')[2].addEventListener("scroll", function () {
+          state.progress =
+            parseInt(
+              (document.getElementsByClassName('scrollbar__wrap')[2].scrollTop / (document.getElementsByClassName('scrollbar__wrap')[2].scrollHeight - document.getElementsByClassName('scrollbar__wrap')[2].clientHeight)) *
+              100
+            ) + "%";
+
+          // let visibleTitles = [];
+          //
+          // for (let i = state.titles.length - 1; i >= 0; i--) {
+          //   const title = state.titles[i];
+          //   let scrollTop = document.getElementsByClassName('scrollbar__wrap')[2].scrollTop
+          //   let clientHeight = document.getElementsByClassName('scrollbar__wrap')[2].clientHeight
+          //   console.log(title.scrollTop,scrollTop,clientHeight)
+          //   if (title.scrollTop <= (scrollTop+clientHeight)) {
+          //     if (state.currentTitle.id === title.id) return;
+          //
+          //     Object.assign(state.currentTitle, title);
+          //
+          //     console.log()
+          //
+          //     // 展开节点
+          //     setChildrenVisible(title, true);
+          //     visibleTitles.push(title);
+          //
+          //     // 展开父节点
+          //     let parent = title.parent;
+          //     while (parent) {
+          //       setChildrenVisible(parent, true);
+          //       visibleTitles.push(parent);
+          //       parent = parent.parent;
+          //     }
+          //
+          //     // 折叠其余节点
+          //     for (const t of state.titles) {
+          //       if (!visibleTitles.includes(t)) {
+          //         setChildrenVisible(t, false);
+          //       }
+          //     }
+          //   }
+          // }
+        });
+
+      }).catch(err => {
+        ElMessage({
+          message: err.message,
+          type: 'success',
+          duration: 3 * 1000
+        })
+      })
     }
 
     return {

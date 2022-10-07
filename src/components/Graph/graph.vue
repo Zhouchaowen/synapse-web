@@ -20,6 +20,7 @@
 
   <el-dialog
     v-model="dialogVisibleMdEditor"
+    :title="mdEditorTitle"
     width="90%"
     custom-class="md-editor-dialog"
     :close-on-click-modal="false"
@@ -27,7 +28,7 @@
     @close="closeMdDialog"
     @open="openMdDialog"
   >
-    <mdEditor ref="editorMdRef"></mdEditor>
+    <mdEditor ref="editorMdRef" :nodeId="nodeId"></mdEditor>
   </el-dialog>
 </template>
 <script>
@@ -37,6 +38,7 @@ import { useRouter } from 'vue-router'
 import addNodeFrom from './add-node-from'
 import mdEditor from './md-editor'
 import api from '@/utils'
+import {ElMessage} from "element-plus";
 
 export default {
   name: 'graph',
@@ -49,7 +51,9 @@ export default {
     const state = reactive({
       dialogVisibleAddNodeFrom: false, // 弹框是否显示
       dialogVisibleMdEditor: false,
-      bookId: router.currentRoute.value.query.id
+      mdEditorTitle: "",
+      nodeId: "",
+      bookId: router.currentRoute.value.query.id,
     })
 
     const addNodeFromRef = ref(null)
@@ -77,13 +81,13 @@ export default {
       api.node.getNodesByBookId(state.bookId).then((ret) =>{
         data = ret
 
-        console.log(data)
+        // console.log(data)
 
         tmpNodes = JSON.parse(JSON.stringify(genCircles(data)))
         tmpEdges = JSON.parse(JSON.stringify(genEdges(data)))
 
-        console.log(genCircles(data))
-        console.log(genEdges(data))
+        // console.log(genCircles(data))
+        // console.log(genEdges(data))
 
         const width = graph.value.offsetWidth   //SVG绘制区域的宽度
         const height = graph.value.offsetHeight //SVG绘制区域的高度
@@ -116,8 +120,8 @@ export default {
           .force("x",d3.forceX(width / 2))
           .force("y",d3.forceY(height / 2))
 
-        console.log(tmpNodes)
-        console.log(tmpEdges)
+        // console.log(tmpNodes)
+        // console.log(tmpEdges)
 
         // 生成20种随机颜色
         color = d3.scaleOrdinal(d3.schemeCategory20);
@@ -186,11 +190,11 @@ export default {
           .on("mouseout",function (d){
             mouseoutCircles()
           })
-          .on('dblclick', function () {
+          .on('dblclick', function (d) {
             let url = router.resolve({
               path: '/md',
               query: {
-                id: '1'
+                nodeId: d.id
               }
             })
             window.open(url.href,'_blank')
@@ -344,7 +348,7 @@ export default {
         .attr('index',index)
         .on('click', function () {
           let operationType = d3.select(this).attr('operation')
-          console.log("currentSelectCircle:",currentSelectCircle)
+          // console.log("currentSelectCircle:",currentSelectCircle)
           menuOperation(operationType,currentSelectCircle.index)
         })
       menuGroup.append('path') // 构建menu弧
@@ -371,7 +375,9 @@ export default {
     // menu对应操作
     function menuOperation(type,index) {
       if (type === 'edit') {
-        console.log(type)
+        // console.log(type)
+        state.mdEditorTitle = currentSelectCircle.name
+        state.nodeId = currentSelectCircle.id
         state.dialogVisibleMdEditor = true
         return
       }
@@ -382,13 +388,13 @@ export default {
       }
 
       if (type === 'open') {
-        console.log(type)
+        // console.log(type)
         openCircle(index)
         return
       }
 
       if (type === 'close') {
-        console.log(type)
+        // console.log(type)
         closeCircle(index)
         return
       }
@@ -427,7 +433,7 @@ export default {
           addArc('edit',d.index,-45, 1.5, 1.99, d.x, d.y, defaultRadius + 2, defaultRadius * 2)
         })
         .on('click', function (d) {
-          console.log(d3)
+          // console.log(d3)
         })
         .on('mousemove',function (d){
           mousemoveCircles(d)
@@ -436,11 +442,11 @@ export default {
           mouseoutCircles()
         })
         .on('dblclick', function () {
-          console.log(this)
+          // console.log(this)
           let url = router.resolve({
             path: '/md',
             query: {
-              id: '1'
+              nodeId: d.id
             }
           })
           window.open(url.href,'_blank')
@@ -615,7 +621,7 @@ export default {
           addArc('edit',d.index,-45, 1.5, 1.99, d.x, d.y, defaultRadius + 2, defaultRadius * 2)
         })
         .on('click', function (d) {
-          console.log(d3)
+          // console.log(d3)
         })
         .on('mousemove',function (d){
           mousemoveCircles(d)
@@ -624,11 +630,11 @@ export default {
           mouseoutCircles()
         })
         .on('dblclick', function () {
-          console.log(this)
+          // console.log(this)
           let url = router.resolve({
             path: '/md',
             query: {
-              id: '1'
+              nodeId: d.id
             }
           })
           window.open(url.href,'_blank')
@@ -783,11 +789,19 @@ export default {
     }
 
     function closeMdDialog(){
-      console.log("closeMdDialog")
+      let form = {
+        node_id: state.nodeId,
+        content: editorMdRef.value.markdown,
+      }
+      api.md.saveMd(JSON.stringify(form)).then((ret) =>{
+
+      }).catch(err => {
+        console.log(err)
+      })
     }
 
     function openMdDialog(){
-      console.log("openMdDialog")
+      // console.log("openMdDialog")
     }
 
     return {
