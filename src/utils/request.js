@@ -1,6 +1,8 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import Cookies from 'js-cookie'
+import {useRouter} from "vue-router";
+
 
 // create an axios instance
 const service = axios.create({
@@ -33,12 +35,15 @@ service.interceptors.response.use(
   },
   error => {
     console.log('err' + error) // for debug
-    ElMessage({
-      message: error.message,
-      type: 'error',
-      duration: 5 * 1000
-    })
-    return Promise.reject(error)
+    if (error.response.status == 401) {
+      ElMessage({
+        message: '登录失效，请重新登录',
+        type: 'error',
+        duration: 5 * 1000
+      })
+    } else {
+      return Promise.reject(error.response)
+    }
   }
 )
 

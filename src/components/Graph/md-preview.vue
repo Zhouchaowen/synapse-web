@@ -27,8 +27,9 @@
       </div>
     </div>
   </div>
-  <div id="md" class="md" ref="previewRef">
-    <v-md-editor v-model="markdown" mode="preview"  height="100%"></v-md-editor>
+  <div id="md" class="md">
+<!--    <v-md-editor v-model="markdown" ref="previewRef" mode="preview"  height="100%"></v-md-editor>-->
+    <v-md-preview id="v-md-preview" :text="markdown" ref="previewRef" />
   </div>
 </template>
 
@@ -42,6 +43,7 @@ export default {
   name: 'md',
   setup(props){
     const router = useRouter()
+    const previewRef = ref(null)
     const state=reactive({
       titles: [],
       currentTitle:{},
@@ -51,8 +53,54 @@ export default {
     })
 
 
+    getMarkDown(state.nodeId)
+
     onMounted(() => {
-      getMarkDown(state.nodeId)
+      getTitles()
+
+      // state.titles = getTitles()
+
+      // 监听滚动事件并更新样式
+      document.getElementById('v-md-preview').addEventListener("scroll", function () {
+        let scrollTop = document.getElementById('v-md-preview').scrollTop
+        let scrollHeight = document.getElementById('v-md-preview').scrollHeight
+        let clientHeight = document.getElementById('v-md-preview').clientHeight
+        state.progress = parseInt(( scrollTop/  (scrollHeight-clientHeight) ) * 100) + "%";
+
+        let visibleTitles = [];
+
+        for (let i = state.titles.length - 1; i >= 0; i--) {
+          const title = state.titles[i];
+          let scrollTop = document.getElementById('v-md-preview').scrollTop
+          let clientHeight = document.getElementById('v-md-preview').clientHeight
+          console.log(title.scrollTop,scrollTop,clientHeight)
+          if (title.scrollTop <= (scrollTop+clientHeight)) {
+            if (state.currentTitle.id === title.id) return;
+
+            Object.assign(state.currentTitle, title)
+
+            // 展开节点
+            setChildrenVisible(title, true);
+            visibleTitles.push(title);
+
+            // 展开父节点
+            let parent = title.parent;
+            while (parent) {
+              setChildrenVisible(parent, true);
+              visibleTitles.push(parent);
+              parent = parent.parent;
+            }
+
+            // 折叠其余节点
+            for (const t of state.titles) {
+              if (!visibleTitles.includes(t)) {
+                setChildrenVisible(t, false);
+              }
+            }
+          }
+        }
+      });
+
       // 设置子节点的可见性
       function setChildrenVisible(title, isVisible) {
         for (const child of title.children) {
@@ -60,144 +108,97 @@ export default {
         }
       }
     })
+
     // 滚动到指定的位置
     function scrollToView(scrollTop) {
-      console.log(document.getElementsByClassName('scrollbar__wrap')[2])
-      document.getElementsByClassName('scrollbar__wrap')[2].scrollTo({ top: scrollTop, behavior: "smooth" });
+      console.log(document.getElementById('v-md-preview'))
+      document.getElementById('v-md-preview').scrollTo({ top: scrollTop, behavior: "smooth" });
     }
+
     // 获取目录的标题
     function getTitles() {
       let titles = [];
       let levels = ["h1", "h2", "h3"];
 
-      let articleElement = document.getElementById('md');
-      if (!articleElement) {
-        return titles;
-      }
+      setTimeout(() => {
+        let children = previewRef.value.$el.querySelectorAll("*")[0].children
+        let elements = Array.from(children);
 
-      let elements = Array.from(articleElement.querySelectorAll("*"));
-
-      console.log(elements)
-      // 调整标签等级
-      let tagNames = new Set(
-        elements.map((el) => el.tagName.toLowerCase())
-      );
-      for (let i = levels.length - 1; i >= 0; i--) {
-        if (!tagNames.has(levels[i])) {
-          levels.splice(i, 1);
-        }
-      }
-
-      let serialNumbers = levels.map(() => 0);
-      for (let i = 0; i < elements.length; i++) {
-        const element = elements[i];
-        let tagName = element.tagName.toLowerCase();
-        let level = levels.indexOf(tagName);
-        if (level == -1) continue;
-
-        let id = tagName + "-" + element.innerText + "-" + i;
-        let node = {
-          id,
-          level,
-          parent: null,
-          children: [],
-          rawName: element.innerText,
-          scrollTop: element.offsetTop,
-        };
-
-        if (titles.length > 0) {
-          let lastNode = titles.at(-1);
-
-          // 遇到子标题
-          if (lastNode.level < node.level) {
-            node.parent = lastNode;
-            lastNode.children.push(node);
+        // 调整标签等级
+        let tagNames = new Set(
+          elements.map((el) => el.tagName.toLowerCase())
+        );
+        for (let i = levels.length - 1; i >= 0; i--) {
+          if (!tagNames.has(levels[i])) {
+            levels.splice(i, 1);
           }
-          // 遇到上一级标题
-          else if (lastNode.level > node.level) {
-            serialNumbers.fill(0, level + 1);
-            let parent = lastNode.parent;
-            while (parent) {
-              if (parent.level < node.level) {
-                parent.children.push(node);
-                node.parent = parent;
-                break;
+        }
+
+        let serialNumbers = levels.map(() => 0);
+        for (let i = 0; i < elements.length; i++) {
+          const element = elements[i];
+          let tagName = element.tagName.toLowerCase();
+          let level = levels.indexOf(tagName);
+          if (level == -1) continue;
+
+          let id = tagName + "-" + element.innerText + "-" + i;
+          let node = {
+            id,
+            level,
+            parent: null,
+            children: [],
+            rawName: element.innerText,
+            scrollTop: element.offsetTop,
+          };
+          if (titles.length > 0) {
+            let lastNode = titles.at(-1);
+
+            // 遇到子标题
+            if (lastNode.level < node.level) {
+              node.parent = lastNode;
+              lastNode.children.push(node);
+            }
+            // 遇到上一级标题
+            else if (lastNode.level > node.level) {
+              serialNumbers.fill(0, level + 1);
+              let parent = lastNode.parent;
+              while (parent) {
+                if (parent.level < node.level) {
+                  parent.children.push(node);
+                  node.parent = parent;
+                  break;
+                }
+                parent = parent.parent;
               }
-              parent = parent.parent;
+            }
+            // 遇到平级
+            else if (lastNode.parent) {
+              node.parent = lastNode.parent;
+              lastNode.parent.children.push(node);
             }
           }
-          // 遇到平级
-          else if (lastNode.parent) {
-            node.parent = lastNode.parent;
-            lastNode.parent.children.push(node);
-          }
+
+          serialNumbers[level] += 1;
+          let serialNumber = serialNumbers.slice(0, level + 1).join(".");
+
+          node.isVisible = node.parent == null;
+          node.name = serialNumber + ". " + element.innerText;
+          titles.push(node);
         }
-
-        serialNumbers[level] += 1;
-        let serialNumber = serialNumbers.slice(0, level + 1).join(".");
-
-        node.isVisible = node.parent == null;
-        node.name = serialNumber + ". " + element.innerText;
-        titles.push(node);
-      }
-
-      return titles;
+      state.titles = titles;
+      })
     }
 
     function getMarkDown(nodeId){
       // state.markdown = ""
       api.md.getMdById(nodeId).then((ret) =>{
         state.markdown = ret.content
-        state.titles = getTitles()
-        console.log(state.titles)
-        // 监听滚动事件并更新样式
-        document.getElementsByClassName('scrollbar__wrap')[2].addEventListener("scroll", function () {
-          state.progress =
-            parseInt(
-              (document.getElementsByClassName('scrollbar__wrap')[2].scrollTop / (document.getElementsByClassName('scrollbar__wrap')[2].scrollHeight - document.getElementsByClassName('scrollbar__wrap')[2].clientHeight)) *
-              100
-            ) + "%";
-
-          // let visibleTitles = [];
-          //
-          // for (let i = state.titles.length - 1; i >= 0; i--) {
-          //   const title = state.titles[i];
-          //   let scrollTop = document.getElementsByClassName('scrollbar__wrap')[2].scrollTop
-          //   let clientHeight = document.getElementsByClassName('scrollbar__wrap')[2].clientHeight
-          //   console.log(title.scrollTop,scrollTop,clientHeight)
-          //   if (title.scrollTop <= (scrollTop+clientHeight)) {
-          //     if (state.currentTitle.id === title.id) return;
-          //
-          //     Object.assign(state.currentTitle, title);
-          //
-          //     console.log()
-          //
-          //     // 展开节点
-          //     setChildrenVisible(title, true);
-          //     visibleTitles.push(title);
-          //
-          //     // 展开父节点
-          //     let parent = title.parent;
-          //     while (parent) {
-          //       setChildrenVisible(parent, true);
-          //       visibleTitles.push(parent);
-          //       parent = parent.parent;
-          //     }
-          //
-          //     // 折叠其余节点
-          //     for (const t of state.titles) {
-          //       if (!visibleTitles.includes(t)) {
-          //         setChildrenVisible(t, false);
-          //       }
-          //     }
-          //   }
-          // }
-        });
-
-      }).catch(err => {
+        getTitles(state.markdown)
+      },(err) => {
+        console.log(err)
         ElMessage({
-          message: err.message,
-          type: 'success',
+          message: err.data.error,
+          type: 'error',
           duration: 3 * 1000
         })
       })
@@ -205,7 +206,8 @@ export default {
 
     return {
       ...toRefs(state),
-      scrollToView
+      scrollToView,
+      previewRef,
     }
   }
 
@@ -226,6 +228,12 @@ export default {
   width: 60%;
   margin: 10px 3%;
   float: left;
+  background-color: #fff;
+}
+
+.v-md-editor-preview {
+  height: 100%;
+  overflow-y: auto;
 }
 
 .catalog-card {
