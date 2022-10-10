@@ -91,4 +91,7 @@ export default {
     justify-content: center;
     display: flex;
   }
+  .el-form{
+    padding: 15px 30px 15px 10px;
+  }
 </style>

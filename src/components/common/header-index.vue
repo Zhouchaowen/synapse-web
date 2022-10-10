@@ -32,10 +32,10 @@
           <i class="iconfont icondenglu"></i>
           登录
         </div>
-        <div class="tag userDrop" v-if="isLogin">
+        <div class="tag userDrop" v-if="isLogin" >
           <div class="userTitle">
             <img src="https://avatar.kancloud.cn/5c/5866fec066cd197efb52f93c73d0b3!middle" class="usericon" alt="">
-            <span class="username" @click="isDropShow=!isDropShow">admin</span>
+            <span class="username" @click.stop="isDropShow=!isDropShow">admin</span>
             <i class="iconfont iconxia"></i>
             <div class="dropList" v-if="isDropShow">
               <div class="dropItem" @click="gotoAccountSet">账号设置</div>
@@ -67,7 +67,7 @@
 </template>
 
 <script>
-import {reactive, ref, toRefs} from 'vue'
+import {onMounted, reactive, ref, toRefs} from 'vue'
 import { useRouter } from 'vue-router'
 import loginFrom from '../User/login'
 import api from '@/utils'
@@ -91,10 +91,13 @@ export default {
 
     const loginFromRef = ref(null)
     let loginToken = Cookies.get('token')
-    console.log("login",loginToken)
     if (loginToken){
       data.isLogin = true
     }
+
+    onMounted(()=>{
+      document.addEventListener('click',bodyCloseMenus)
+    })
 
     const handleBlur = (item) => {
       data.onInput = '0'
@@ -148,6 +151,12 @@ export default {
     function logout(){
       Cookies.remove('token')
       data.isLogin = false
+    }
+
+    function bodyCloseMenus(){
+      if(data.isDropShow == true){
+        data.isDropShow = false
+      }
     }
 
     return {
