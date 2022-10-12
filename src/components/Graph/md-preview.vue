@@ -190,12 +190,11 @@ export default {
     }
 
     function getMarkDown(nodeId){
-      // state.markdown = ""
+      state.markdown = ""
       api.md.getMdById(nodeId).then((ret) =>{
         state.markdown = ret.content
         getTitles(state.markdown)
       },(err) => {
-        console.log(err)
         ElMessage({
           message: err.data.error,
           type: 'error',

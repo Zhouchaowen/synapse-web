@@ -28,13 +28,13 @@ export default {
 
     getMarkDown(props.nodeId)
     function getMarkDown(nodeId){
-      console.log(state.markdown,"load")
       state.markdown = ""
       api.md.getMdById(nodeId).then((ret) =>{
-        state.markdown = ret.content
-      }).catch(err => {
+        if (ret != null){
+          state.markdown = ret.content
+        }
         ElMessage({
-          message: err.message,
+          message: "加载成功",
           type: 'success',
           duration: 3 * 1000
         })
@@ -48,14 +48,17 @@ export default {
       }
 
       api.md.saveMd(JSON.stringify(form)).then((ret) =>{
-        console.log(ret)
         ElMessage({
           message: "保存成功",
           type: 'success',
           duration: 3 * 1000
         })
       }).catch(err => {
-        console.log(err)
+        ElMessage({
+          message: "保存失败",
+          type: 'error',
+          duration: 3 * 1000
+        })
       })
     }
     return {

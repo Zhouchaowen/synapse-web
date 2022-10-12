@@ -79,10 +79,15 @@ export default {
     let currentSelectCircle
     onMounted(() => {
       api.node.getNodesByBookId(state.bookId).then((ret) =>{
+        if (ret == null) {
+          ElMessage({
+            message: "暂无数据",
+            type: 'success',
+            duration: 3 * 1000
+          })
+          return
+        }
         data = ret
-
-        // console.log(data)
-
         tmpNodes = JSON.parse(JSON.stringify(genCircles(data)))
         tmpEdges = JSON.parse(JSON.stringify(genEdges(data)))
 
@@ -629,7 +634,7 @@ export default {
         .on("mouseout",function (d){
           mouseoutCircles()
         })
-        .on('dblclick', function () {
+        .on('dblclick', function (d) {
           // console.log(this)
           let url = router.resolve({
             path: '/md',
@@ -830,7 +835,8 @@ export default {
   overflow: hidden;
 }
 .md-editor-dialog .el-dialog__body {
-  height: calc(100% - 90px);
+  height: calc(100% - 70px);
   padding-bottom: 30px;
+  padding-top: 5px;
 }
 </style>

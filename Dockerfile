@@ -1,4 +1,4 @@
-FROM node:14.14.0 as builder
+FROM node:12.1.0 as builder
 WORKDIR /code
 ADD . /code
 RUN npm config set registry https://registry.npm.taobao.org && npm config get registry && npm install
